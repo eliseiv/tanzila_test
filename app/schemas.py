@@ -18,8 +18,11 @@ class ProcessRequest(BaseModel):
     @field_validator("data")
     @classmethod
     def sanitize_data(cls, v: str) -> str:
-        """Strip leading/trailing whitespace (OWASP input validation)."""
-        return v.strip()
+        """Strip whitespace and reject blank input (OWASP input validation)."""
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Data must not be empty or whitespace-only")
+        return stripped
 
 
 class ProcessResponse(BaseModel):

@@ -2,11 +2,12 @@ import time
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.metrics import REQUEST_COUNT, REQUEST_LATENCY
+from app.metrics import LOG_EVENTS, REQUEST_COUNT, REQUEST_LATENCY
 from app.models import Message
 from app.schemas import (
     HealthResponse,
@@ -17,6 +18,12 @@ from app.schemas import (
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
+
+
+@router.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """Redirect root to API docs."""
+    return RedirectResponse(url="/docs")
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -34,11 +41,13 @@ def get_message(message_id: int, db: Session = Depends(get_db)) -> MessageRespon
     REQUEST_COUNT.labels(endpoint="/message", method="GET").inc()
 
     if message_id <= 0:
+        LOG_EVENTS.labels(level="warning").inc()
         logger.warning("invalid_message_id", message_id=message_id)
         raise HTTPException(status_code=400, detail="Message ID must be positive")
 
     message = db.query(Message).filter(Message.id == message_id).first()
     if message is None:
+        LOG_EVENTS.labels(level="warning").inc()
         logger.warning("message_not_found", message_id=message_id)
         raise HTTPException(status_code=404, detail="Message not found")
 

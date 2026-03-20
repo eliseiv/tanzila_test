@@ -12,3 +12,9 @@ REQUEST_LATENCY = Histogram(
     ["endpoint"],
     buckets=(0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0),
 )
+
+LOG_EVENTS = Counter(
+    "app_log_events_total",
+    "Application log events by severity level",
+    ["level"],
+)
